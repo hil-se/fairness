@@ -14,7 +14,7 @@
 
 ### Human Ethical Bias Detection with Machine Learning Software.
 
-Aug 2021 | [repo](https://github.com/hil-se/fairness)
+Aug 2021 | [repo](https://github.com/hil-se/fairness#top)
 
 Instead of trying to reduce bias in machine learning software, this project aims to reduce bias from its source--- the human decisions.
  - That is, this work proposes to utilize the machine learning bias inherited from the training data (human decisions) as an indicator for detecting human bias.
