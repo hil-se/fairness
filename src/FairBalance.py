@@ -54,6 +54,161 @@ class FairBalance:
             self.X = dataset_orig.drop(["label"], axis=1)
             self.privilege = ["sex", "race"]
 
+        elif data == "adult":
+            ## Load dataset
+            dataset_orig = pd.read_csv('../dataset/adult.data.csv')
+
+            ## Drop categorical features
+            # dataset_orig = dataset_orig.drop(
+            #     ['workclass', 'fnlwgt', 'education', 'marital-status', 'occupation', 'relationship', 'capital-gain',
+            #      'capital-loss', 'hours-per-week', 'native-country'], axis=1)
+            dataset_orig = dataset_orig.drop(
+                ['workclass', 'fnlwgt', 'education', 'marital-status', 'occupation', 'relationship', 'capital-gain',
+                 'capital-loss', 'native-country'], axis=1)
+
+            ## Drop NULL values
+            dataset_orig = dataset_orig.dropna()
+
+            ## Change symbolics to numerics
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == ' Female', 1, 0)
+            dataset_orig['race'] = np.where(dataset_orig['race'] == ' White', 1, 0)
+            dataset_orig['Probability'] = np.where(dataset_orig['Probability'] == ' <=50K', 0, 1)
+
+            ## Rename class column
+            dataset_orig.rename(index=str, columns={"Probability": "label"}, inplace=True)
+            dataset_orig = dataset_orig.sample(frac=1).reset_index(drop=True)
+            self.y = np.array(dataset_orig["label"])
+            self.X = dataset_orig.drop(["label"], axis=1)
+            self.privilege = ["sex", "race"]
+
+        elif data == "default":
+            ## Load dataset
+            dataset_orig = pd.read_csv('../dataset/default_of_credit_card_clients_first_row_removed.csv')
+
+            dataset_orig = dataset_orig.drop(
+                ['ID'], axis=1)
+            ## Change column values
+
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 2, 0, 1)
+
+            ## Drop NULL values
+            dataset_orig = dataset_orig.dropna()
+
+            ## Rename class column
+            dataset_orig.rename(index=str, columns={"Probability": "label"}, inplace=True)
+            dataset_orig = dataset_orig.sample(frac=1).reset_index(drop=True)
+            self.y = np.array(dataset_orig["label"])
+            self.X = dataset_orig.drop(["label"], axis=1)
+            self.privilege = ["sex"]
+
+        elif data == "heart":
+            ## Load dataset
+            from sklearn import preprocessing
+            dataset_orig = pd.read_csv('../dataset/processed.cleveland.data.csv')
+
+            ## Drop NULL values
+            dataset_orig = dataset_orig.dropna()
+
+            ## calculate mean of age column
+            mean = dataset_orig.loc[:, "age"].mean()
+            dataset_orig['age'] = np.where(dataset_orig['age'] >= mean, 1, 0)
+
+            ## Make goal column binary
+            dataset_orig['Probability'] = np.where(dataset_orig['Probability'] > 0, 1, 0)
+
+            ## Rename class column
+            dataset_orig.rename(index=str, columns={"Probability": "label"}, inplace=True)
+            dataset_orig = dataset_orig.sample(frac=1).reset_index(drop=True)
+            self.y = np.array(dataset_orig["label"])
+            self.X = dataset_orig.drop(["label"], axis=1)
+            self.privilege = ["age"]
+
+        elif data == "german":
+            ## Load dataset
+            dataset_orig = pd.read_csv('../dataset/GermanData.csv')
+
+            ## Drop categorical features
+            dataset_orig = dataset_orig.drop(
+                ['1', '2', '4', '5', '8', '10', '11', '12', '14', '15', '16', '17', '18', '19', '20'], axis=1)
+
+            ## Drop NULL values
+            dataset_orig = dataset_orig.dropna()
+
+            ## Change symbolics to numerics
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 'A91', 1, dataset_orig['sex'])
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 'A92', 0, dataset_orig['sex'])
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 'A93', 1, dataset_orig['sex'])
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 'A94', 1, dataset_orig['sex'])
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 'A95', 0, dataset_orig['sex'])
+            # dataset_orig['age'] = np.where(dataset_orig['age'] >= 25, 1, 0)
+            dataset_orig['credit_history'] = np.where(dataset_orig['credit_history'] == 'A30', 1,
+                                                      dataset_orig['credit_history'])
+            dataset_orig['credit_history'] = np.where(dataset_orig['credit_history'] == 'A31', 1,
+                                                      dataset_orig['credit_history'])
+            dataset_orig['credit_history'] = np.where(dataset_orig['credit_history'] == 'A32', 1,
+                                                      dataset_orig['credit_history'])
+            dataset_orig['credit_history'] = np.where(dataset_orig['credit_history'] == 'A33', 2,
+                                                      dataset_orig['credit_history'])
+            dataset_orig['credit_history'] = np.where(dataset_orig['credit_history'] == 'A34', 3,
+                                                      dataset_orig['credit_history'])
+
+            dataset_orig['savings'] = np.where(dataset_orig['savings'] == 'A61', 1, dataset_orig['savings'])
+            dataset_orig['savings'] = np.where(dataset_orig['savings'] == 'A62', 1, dataset_orig['savings'])
+            dataset_orig['savings'] = np.where(dataset_orig['savings'] == 'A63', 2, dataset_orig['savings'])
+            dataset_orig['savings'] = np.where(dataset_orig['savings'] == 'A64', 2, dataset_orig['savings'])
+            dataset_orig['savings'] = np.where(dataset_orig['savings'] == 'A65', 3, dataset_orig['savings'])
+
+            dataset_orig['employment'] = np.where(dataset_orig['employment'] == 'A72', 1, dataset_orig['employment'])
+            dataset_orig['employment'] = np.where(dataset_orig['employment'] == 'A73', 1, dataset_orig['employment'])
+            dataset_orig['employment'] = np.where(dataset_orig['employment'] == 'A74', 2, dataset_orig['employment'])
+            dataset_orig['employment'] = np.where(dataset_orig['employment'] == 'A75', 2, dataset_orig['employment'])
+            dataset_orig['employment'] = np.where(dataset_orig['employment'] == 'A71', 3, dataset_orig['employment'])
+
+            ## ADD Columns
+            dataset_orig['credit_history=Delay'] = 0
+            dataset_orig['credit_history=None/Paid'] = 0
+            dataset_orig['credit_history=Other'] = 0
+
+            dataset_orig['credit_history=Delay'] = np.where(dataset_orig['credit_history'] == 1, 1,
+                                                            dataset_orig['credit_history=Delay'])
+            dataset_orig['credit_history=None/Paid'] = np.where(dataset_orig['credit_history'] == 2, 1,
+                                                                dataset_orig['credit_history=None/Paid'])
+            dataset_orig['credit_history=Other'] = np.where(dataset_orig['credit_history'] == 3, 1,
+                                                            dataset_orig['credit_history=Other'])
+
+            dataset_orig['savings=500+'] = 0
+            dataset_orig['savings=<500'] = 0
+            dataset_orig['savings=Unknown/None'] = 0
+
+            dataset_orig['savings=500+'] = np.where(dataset_orig['savings'] == 1, 1, dataset_orig['savings=500+'])
+            dataset_orig['savings=<500'] = np.where(dataset_orig['savings'] == 2, 1, dataset_orig['savings=<500'])
+            dataset_orig['savings=Unknown/None'] = np.where(dataset_orig['savings'] == 3, 1,
+                                                            dataset_orig['savings=Unknown/None'])
+
+            dataset_orig['employment=1-4 years'] = 0
+            dataset_orig['employment=4+ years'] = 0
+            dataset_orig['employment=Unemployed'] = 0
+
+            dataset_orig['employment=1-4 years'] = np.where(dataset_orig['employment'] == 1, 1,
+                                                            dataset_orig['employment=1-4 years'])
+            dataset_orig['employment=4+ years'] = np.where(dataset_orig['employment'] == 2, 1,
+                                                           dataset_orig['employment=4+ years'])
+            dataset_orig['employment=Unemployed'] = np.where(dataset_orig['employment'] == 3, 1,
+                                                             dataset_orig['employment=Unemployed'])
+
+            dataset_orig = dataset_orig.drop(['credit_history', 'savings', 'employment'], axis=1)
+            dataset_orig['Probability'] = np.where(dataset_orig['Probability'] == 2, 1, 0)
+
+            ## Rename class column
+            dataset_orig.rename(index=str, columns={"Probability": "label"}, inplace=True)
+            dataset_orig = dataset_orig.sample(frac=1).reset_index(drop=True)
+            self.y = np.array(dataset_orig["label"])
+            self.X = dataset_orig.drop(["label"], axis=1)
+            self.privilege = ["sex"]
+
+        else:
+            raise Exception("Unknown data source.")
+
     def fit(self, X, y):
         if self.fair_balance:
             segments = {}

@@ -4,7 +4,7 @@ from demos import cmd
 from pdb import set_trace
 
 def exp():
-    fb = FairBalance("LR",data="compas",fair_balance=True)
+    fb = FairBalance("LR",data="german",fair_balance=False)
     fb.cross_val()
 
 
