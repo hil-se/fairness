@@ -4,7 +4,8 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+from sklearn.svm import LinearSVC
+from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
@@ -13,7 +14,7 @@ from pdb import set_trace
 
 class FairBalance:
     def __init__(self, model, data="compas", fair_balance = True):
-        models = {"SVM": SVC(kernel="linear", probability=True, class_weight="balanced"),
+        models = {"SVM": SGDClassifier(class_weight="balanced"),
                   "RF": RandomForestClassifier(n_estimators=100, criterion="entropy", class_weight="balanced"),
                   "LR": LogisticRegression(class_weight="balanced"),
                   "NB": GaussianNB(),
@@ -24,6 +25,7 @@ class FairBalance:
         self.load_data(data)
 
     def load_data(self, data="compas"):
+        # Load/prepare different datasets
         if data == "compas":
             ## Load dataset
             dataset_orig = pd.read_csv('../dataset/compas-scores-two-years.csv')
@@ -211,6 +213,7 @@ class FairBalance:
 
     def fit(self, X, y):
         if self.fair_balance:
+            # Apply FairBalance
             segments = {}
             n = len(y)
             for id in X.index:
@@ -229,6 +232,7 @@ class FairBalance:
                 yy = y[sampled]
                 self.model.fit(XX, yy)
         else:
+            # Do not apply FairBalance
             self.model.fit(X, y)
 
 
@@ -252,6 +256,12 @@ class FairBalance:
         fn = np & pg
         result["tpr"] = rate(tp, fn)
         result["fpr"] = rate(fp, tn)
+        result["prec"] = rate(tp, fp)
+        result["acc"] = rate(tp | tn, fp | fn)
+        if (result["tpr"]+result["prec"]) == 0:
+            result["f1"] = 0
+        else:
+            result["f1"] = 2*result["tpr"]*result["prec"]/(result["tpr"]+result["prec"])
         for key in self.privilege:
             result[key] = {}
             group1 = self.X[key] == 1
@@ -268,14 +278,17 @@ class FairBalance:
             fpr1 = rate(fp1, tn1)
             tpr0 = rate(tp0, fn0)
             fpr0 = rate(fp0, tn0)
+            pr1 = rate(tp1 | fp1, tn1 | fn1)
+            pr0 = rate(tp0 | fp0, tn0 | fn0)
             result[key]["eod"] = abs(tpr0 - tpr1)
             result[key]["aod"] = abs(0.5*(fpr0-fpr1+tpr0-tpr1))
+            result[key]["spd"] = abs(pr0 - pr1)
         return result
 
 
     def cross_val(self, folds = 5):
+        # Perform a cross validation
         kf = KFold(n_splits = folds)
-        cross_result = {"TP":0, "FP": 0, "TN": 0, "FN": 0}
         preds = []
         for train, test in kf.split(self.y):
             X_train = self.X.iloc[train]
@@ -287,6 +300,6 @@ class FairBalance:
             self.fit(X_train, y_train)
             preds.extend(list(self.model.predict(X_test)))
         result = self.evaluate(np.array(preds))
-        print(result)
+        return result
 
 
