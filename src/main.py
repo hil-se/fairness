@@ -56,7 +56,20 @@ def parse_results():
     median_df = dict2df(medians)
     median_df.to_csv("../results/median.csv", index=False)
 
-
+def test(tpr, fpr):
+    from collections import Counter
+    fb = FairBalance("LR", data="german", fair_balance=True)
+    pg = Counter(fb.y)[0]
+    ng = Counter(fb.y)[1]
+    tp = pg*tpr
+    fp = ng*fpr
+    tn = ng - fp
+    fn = pg - tp
+    prec = tn/(tn+fn)
+    rec = tn/(tn+fp)
+    f1 = 2*prec*rec/(prec+rec)
+    acc = (tp+tn)/(pg+ng)
+    print(f1, acc)
 
 if __name__ == "__main__":
     eval(cmd())

@@ -46,8 +46,8 @@ class FairBalance:
             dataset_orig = dataset_orig.dropna()
 
             ## Change symbolics to numerics
-            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 'Female', 1, 0)
-            dataset_orig['race'] = np.where(dataset_orig['race'] == 'Caucasian', 1, 0)
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == 'Female', 0, 1)
+            dataset_orig['race'] = np.where(dataset_orig['race'] == 'Caucasian', 0, 1)
             dataset_orig['c_charge_degree'] = np.where(dataset_orig['c_charge_degree'] == 'F', 1, 0)
             ## Rename class column
             dataset_orig.rename(index=str, columns={"two_year_recid": "label"}, inplace=True)
@@ -72,7 +72,7 @@ class FairBalance:
             dataset_orig = dataset_orig.dropna()
 
             ## Change symbolics to numerics
-            dataset_orig['sex'] = np.where(dataset_orig['sex'] == ' Female', 1, 0)
+            dataset_orig['sex'] = np.where(dataset_orig['sex'] == ' Female', 0, 1)
             dataset_orig['race'] = np.where(dataset_orig['race'] == ' White', 1, 0)
             dataset_orig['Probability'] = np.where(dataset_orig['Probability'] == ' <=50K', 0, 1)
 
@@ -199,7 +199,7 @@ class FairBalance:
                                                              dataset_orig['employment=Unemployed'])
 
             dataset_orig = dataset_orig.drop(['credit_history', 'savings', 'employment'], axis=1)
-            dataset_orig['Probability'] = np.where(dataset_orig['Probability'] == 2, 1, 0)
+            dataset_orig['Probability'] = np.where(dataset_orig['Probability'] == 2, 0, 1)
 
             ## Rename class column
             dataset_orig.rename(index=str, columns={"Probability": "label"}, inplace=True)
@@ -280,9 +280,9 @@ class FairBalance:
             fpr0 = rate(fp0, tn0)
             pr1 = rate(tp1 | fp1, tn1 | fn1)
             pr0 = rate(tp0 | fp0, tn0 | fn0)
-            result[key]["eod"] = abs(tpr0 - tpr1)
-            result[key]["aod"] = abs(0.5*(fpr0-fpr1+tpr0-tpr1))
-            result[key]["spd"] = abs(pr0 - pr1)
+            result[key]["eod"] = tpr0 - tpr1
+            result[key]["aod"] = 0.5*(fpr0-fpr1+tpr0-tpr1)
+            result[key]["spd"] = pr0 - pr1
         return result
 
 
