@@ -75,8 +75,8 @@ def median_dict(results):
         else:
             med = np.median(results[key])
             iqr = np.percentile(results[key],75)-np.percentile(results[key],25)
-            # results[key] = str(med)+" ("+str(iqr)+")"
-            results[key] = "%.2f (%.2f)"%(med, iqr)
+            # results[key] = "%.2f" % (med)
+            results[key] = "%.2f (%.2f)" % (med, iqr)
     return results
 
 def dict2df(results):
