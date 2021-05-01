@@ -6,9 +6,9 @@ SVM,adult,after,0,0,3,3,3,3,,
 SVM,default,before,0,0,0,0,,,,
 SVM,default,after,3,3,3,3,,,,
 SVM,heart,before,0,0,,,,,0,0
-SVM,heart,after,3,3,,,,,3,3
+SVM,heart,after,3,3,,,,,3,2
 SVM,german,before,0,0,0,0,,,,
-SVM,german,after,0,0,0,1,,,,
+SVM,german,after,0,0,3,3,,,,
 RF,compas,before,3,3,0,0,0,0,,
 RF,compas,after,0,0,3,3,3,3,,
 RF,adult,before,3,3,0,0,0,0,,
@@ -46,6 +46,6 @@ DT,adult,after,0,0,3,3,3,3,,
 DT,default,before,0,3,0,0,,,,
 DT,default,after,0,0,3,3,,,,
 DT,heart,before,0,0,,,,,0,0
-DT,heart,after,0,0,,,,,3,3
+DT,heart,after,0,0,,,,,3,0
 DT,german,before,0,0,0,0,,,,
 DT,german,after,0,0,3,3,,,,

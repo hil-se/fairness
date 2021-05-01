@@ -55,12 +55,14 @@ def compare_dict(results):
     y = results["False"]
     for key in x:
         if type(x[key]) == dict:
+            # Bias Metrics: lower the better
             for key2 in x[key]:
                 xx = x[key][key2]
                 yy = y[key][key2]
-                x[key][key2] = is_larger(xx, yy)
-                y[key][key2] = is_larger(yy, xx)
+                x[key][key2] = is_larger(np.abs(yy), np.abs(xx))
+                y[key][key2] = is_larger(np.abs(xx), np.abs(yy))
         else:
+            # General Metrics: higher the better
             xx = x[key]
             yy = y[key]
             x[key] = is_larger(xx, yy)
