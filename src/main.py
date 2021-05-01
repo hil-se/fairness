@@ -52,7 +52,7 @@ def parse_results():
 
     # Calculate medians and iqrs of 30 repeats
     medians = copy.deepcopy(results)
-    medians = median_dict(medians)
+    medians = median_dict(medians, iqr=True)
     median_df = dict2df(medians)
     median_df.to_csv("../results/median.csv", index=False)
 
