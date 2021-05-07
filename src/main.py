@@ -1,31 +1,34 @@
-from FairBalance import FairBalance
-import numpy as np
-import pandas as pd
 from demos import cmd
 import copy
 try:
    import cPickle as pickle
 except:
    import pickle
-from pdb import set_trace
 from utils import *
+from experiment import Experiment
 
 
-def one_exp(treatment, data, fair_balance, repeats = 30):
+def one_exp(treatment, data, fair_balance, target="", repeats=50):
+    # Conduct one experiment:
+    #     treatment in {"SVM", "RF", "LR", "DT"}
+    #     data in {"compas", "adult", "german"}
+    #     fair_balance in {"None", "FairBalance", "Reweighing", "AdversialDebiasing", "RejectOptionClassification"}
+    #     target = target protected attribute, not used if fair_balance == "FairBlance" or "None"
+    #     repeats = number of times repeating the experiments
+    np.random.seed(1)
+    exp = Experiment(treatment, data=data, fair_balance=fair_balance, target_attribute=target)
     results = {}
-    # Repeat 30 times for each unique setting
     for _ in range(repeats):
-        fb = FairBalance(treatment,data=data,fair_balance=fair_balance=="True")
-        result = fb.cross_val()
+        result = exp.run()
         results = merge_dict(results, result)
-    # print(results)
+    print(results)
     return results
 
-def exps():
+def RQ1():
     # Perform an overall experiment on different algorithms, datasets, and FairBalance settings.
-    treatments = ["SVM", "RF", "LR", "NB", "DT"]
-    datasets = ["compas", "adult", "default", "heart", "german"]
-    balances = ["True", "False"]
+    treatments = ["LR", "SVM", "DT", "RF"]
+    datasets = ["compas", "adult", "german"]
+    balances = ["None", "FairBalance"]
     results = {}
     for treatment in treatments:
         results[treatment] = {}
@@ -34,42 +37,63 @@ def exps():
             for balance in balances:
                 results[treatment][dataset][balance] = one_exp(treatment, dataset, balance)
                 # dump results
-                with open("../dump/results.pickle", "wb") as p:
+                with open("../dump/RQ1.pickle", "wb") as p:
                     pickle.dump(results, p)
                 print(treatment+", "+dataset+", "+balance)
+    parse_results_RQ1()
 
+def RQ2():
+    # Compare FairBalance against other soa baseline bias mitigation algorithms.
+    # Classifier is fixed to logistic regression.
+    treatment = "LR"
+    datasets = ["compas", "adult", "german"]
+    balances = ["Reweighing", "AdversialDebiasing", "RejectOptionClassification", "FairBalance"]
+    targets = {"compas": ["sex", "race"], "adult": ["sex", "race"], "german": ["sex", "age"]}
+    results = {}
+    for dataset in datasets:
+        results[dataset] = {}
+        for balance in balances:
+            if balance!="FairBalance":
+            # Need target attribute
+                for target in targets[dataset]:
+                    results[dataset][balance+": "+target] = one_exp(treatment, dataset, balance, target=target)
+            else:
+                results[dataset][balance] = one_exp(treatment, dataset, balance)
+            # dump results
+            with open("../dump/RQ2.pickle", "wb") as p:
+                pickle.dump(results, p)
+            print(dataset + ", " + balance)
+    parse_results_RQ2()
 
-def parse_results():
-    with open("../dump/results.pickle", "rb") as p:
+def parse_results_RQ1():
+    # Parse results of RQ1 and save as csv files.
+    with open("../dump/RQ1.pickle", "rb") as p:
         results = pickle.load(p)
     # Compare results between w/ and w/o FairBalance
     compares = copy.deepcopy(results)
     for treatment in compares:
         for dataset in compares[treatment]:
             compares[treatment][dataset] = compare_dict(compares[treatment][dataset])
-    compare_df = dict2df(compares)
-    compare_df.to_csv("../results/compare.csv", index=False)
+    compare_df = dict2dfRQ1(compares)
+    compare_df.to_csv("../results/RQ1_compare.csv", index=False)
 
     # Calculate medians and iqrs of 30 repeats
     medians = copy.deepcopy(results)
-    medians = median_dict(medians, iqr=True)
-    median_df = dict2df(medians)
-    median_df.to_csv("../results/median.csv", index=False)
+    medians = median_dict(medians, True)
+    median_df = dict2dfRQ1(medians)
+    median_df.to_csv("../results/RQ1_median.csv", index=False)
 
-def test(tpr, fpr):
-    from collections import Counter
-    fb = FairBalance("LR", data="german", fair_balance=True)
-    pg = Counter(fb.y)[0]
-    ng = Counter(fb.y)[1]
-    tp = pg*tpr
-    fp = ng*fpr
-    tn = ng - fp
-    fn = pg - tp
-    prec = tn/(tn+fn)
-    rec = tn/(tn+fp)
-    f1 = 2*prec*rec/(prec+rec)
-    acc = (tp+tn)/(pg+ng)
-    print(f1, acc)
+def parse_results_RQ2():
+    # Parse results of RQ2 and save as csv files.
+    with open("../dump/RQ2.pickle", "rb") as p:
+        results = pickle.load(p)
+    # Calculate medians and iqrs of 30 repeats
+    medians = copy.deepcopy(results)
+    medians = median_dict(medians, True)
+    median_df = dict2dfRQ2(medians)
+    median_df.to_csv("../results/RQ2_median.csv", index=False)
+
+
 
 if __name__ == "__main__":
     eval(cmd())

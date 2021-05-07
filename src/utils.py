@@ -5,7 +5,6 @@ try:
    import cPickle as pickle
 except:
    import pickle
-from pdb import set_trace
 
 
 def merge_dict(results, result):
@@ -51,8 +50,8 @@ def is_larger(x, y):
 
 def compare_dict(results):
     # Compare results between w/ and w/o FairBalance
-    x = results["True"]
-    y = results["False"]
+    x = results["FairBalance"]
+    y = results["None"]
     for key in x:
         if type(x[key]) == dict:
             # Bias Metrics: lower the better
@@ -83,40 +82,98 @@ def median_dict(results, iqr = True):
                 results[key] = "%.2f" % (med)
     return results
 
-def dict2df(results):
+def mean_dict(results, std = True):
+    # Compute mean value of lists in the dictionary
+    for key in results:
+        if type(results[key]) == dict:
+            results[key] = median_dict(results[key])
+        else:
+            med = np.mean(results[key])
+            if std:
+                std = np.std(results[key])
+                results[key] = "%.2f (%.2f)" % (med, std)
+            else:
+                results[key] = "%.2f" % (med)
+    return results
+
+def dict2dfRQ1(results):
     # Generate a pandas dataframe based on the dictionary
-    columns = ["Algorithm", "Dataset", "FairBalance", "F1", "Accuracy", "Sex: AOD", "Sex: EOD", "Race: AOD", "Race: EOD", "Age: AOD", "Age: EOD"]
+    columns = ["Algorithm", "Dataset", "FairBalance", "F1", "Accuracy", "Sex: AOD", "Sex: EOD", "Sex: SPD", "Race: AOD", "Race: EOD", "Race: SPD", "Age: AOD", "Age: EOD", "Age: SPD"]
     df = {key:[] for key in columns}
     for treatment in results:
         for dataset in results[treatment]:
             # for balance in results[treatment][dataset]:
-            for balance in ["False", "True"]:
+            for balance in ["None", "FairBalance"]:
                 x = results[treatment][dataset][balance]
                 df["Algorithm"].append(treatment)
                 df["Dataset"].append(dataset)
-                df["FairBalance"].append("before" if balance=="False" else "after")
+                df["FairBalance"].append("before" if balance=="None" else "after")
                 df["F1"].append(x["f1"])
                 df["Accuracy"].append(x["acc"])
                 if "sex" in x:
                     df["Sex: AOD"].append(x["sex"]["aod"])
                     df["Sex: EOD"].append(x["sex"]["eod"])
+                    df["Sex: SPD"].append(x["sex"]["spd"])
                 else:
                     df["Sex: AOD"].append("")
                     df["Sex: EOD"].append("")
+                    df["Sex: SPD"].append("")
                 if "race" in x:
                     df["Race: AOD"].append(x["race"]["aod"])
                     df["Race: EOD"].append(x["race"]["eod"])
+                    df["Race: SPD"].append(x["race"]["spd"])
                 else:
                     df["Race: AOD"].append("")
                     df["Race: EOD"].append("")
+                    df["Race: SPD"].append("")
                 if "age" in x:
                     df["Age: AOD"].append(x["age"]["aod"])
                     df["Age: EOD"].append(x["age"]["eod"])
+                    df["Age: SPD"].append(x["age"]["spd"])
                 else:
                     df["Age: AOD"].append("")
                     df["Age: EOD"].append("")
+                    df["Age: SPD"].append("")
     df = pd.DataFrame(df, columns = columns)
     return df
 
-
+def dict2dfRQ2(results):
+    # Generate a pandas dataframe based on the dictionary
+    columns = ["Dataset", "Algorithm", "F1", "Accuracy", "Sex: AOD", "Sex: EOD", "Sex: SPD", "Race: AOD",
+               "Race: EOD", "Race: SPD", "Age: AOD", "Age: EOD", "Age: SPD"]
+    df = {key: [] for key in columns}
+    for dataset in results:
+        # for balance in results[treatment][dataset]:
+        for treatment in results[dataset]:
+            x = results[dataset][treatment]
+            df["Dataset"].append(dataset)
+            df["Algorithm"].append(treatment)
+            df["F1"].append(x["f1"])
+            df["Accuracy"].append(x["acc"])
+            if "sex" in x:
+                df["Sex: AOD"].append(x["sex"]["aod"])
+                df["Sex: EOD"].append(x["sex"]["eod"])
+                df["Sex: SPD"].append(x["sex"]["spd"])
+            else:
+                df["Sex: AOD"].append("")
+                df["Sex: EOD"].append("")
+                df["Sex: SPD"].append("")
+            if "race" in x:
+                df["Race: AOD"].append(x["race"]["aod"])
+                df["Race: EOD"].append(x["race"]["eod"])
+                df["Race: SPD"].append(x["race"]["spd"])
+            else:
+                df["Race: AOD"].append("")
+                df["Race: EOD"].append("")
+                df["Race: SPD"].append("")
+            if "age" in x:
+                df["Age: AOD"].append(x["age"]["aod"])
+                df["Age: EOD"].append(x["age"]["eod"])
+                df["Age: SPD"].append(x["age"]["spd"])
+            else:
+                df["Age: AOD"].append("")
+                df["Age: EOD"].append("")
+                df["Age: SPD"].append("")
+    df = pd.DataFrame(df, columns = columns)
+    return df
 
