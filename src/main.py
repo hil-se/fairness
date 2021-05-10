@@ -15,7 +15,6 @@ def one_exp(treatment, data, fair_balance, target="", repeats=50):
     #     fair_balance in {"None", "FairBalance", "Reweighing", "AdversialDebiasing", "RejectOptionClassification"}
     #     target = target protected attribute, not used if fair_balance == "FairBlance" or "None"
     #     repeats = number of times repeating the experiments
-    np.random.seed(1)
     exp = Experiment(treatment, data=data, fair_balance=fair_balance, target_attribute=target)
     results = {}
     for _ in range(repeats):
@@ -92,7 +91,6 @@ def parse_results_RQ2():
     medians = median_dict(medians, True)
     median_df = dict2dfRQ2(medians)
     median_df.to_csv("../results/RQ2_median.csv", index=False)
-
 
 
 if __name__ == "__main__":
