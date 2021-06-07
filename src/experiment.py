@@ -9,6 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import LinearSVC
+from sklearn.naive_bayes import GaussianNB
 from sklearn.preprocessing import StandardScaler
 from collections import Counter
 from fairbalance import FairBalance
@@ -21,7 +22,8 @@ class Experiment:
         models = {"SVM": LinearSVC(dual=False),
                   "RF": RandomForestClassifier(n_estimators=100, criterion="entropy"),
                   "LR": LogisticRegression(),
-                  "DT": DecisionTreeClassifier(criterion="entropy")
+                  "DT": DecisionTreeClassifier(criterion="entropy"),
+                  "NB": GaussianNB()
                   }
         data_loader = {"compas": load_preproc_data_compas, "adult": load_preproc_data_adult, "german": load_preproc_data_german}
 
@@ -30,18 +32,65 @@ class Experiment:
 
         # No effect on FairBalance
         self.target_attribute = target_attribute
+
         self.data = data_loader[data]()
         self.X = self.data.features
         self.y = self.data.labels.ravel()
+        self.inject_place = "None"
 
+    def inject_bias(self, inject_place, inject_ratio):
+        # inject_place = {"All": inject to both training and test data, "Train": only inject bias in training data, "None": no biased labels}
+        # inject_ratio={attribute1: [ratio11, ratio12], attribute2: [ratio21, ratio22], ...}
+        # ratio11 = 0.2 , ratio12 = -0.1 then
+        #   1. 20% of (attribute1 =0 AND label = 0) will be changed to label = 1,
+        #   2. 10% of (attribute1 =1 AND label = 1) will be changed to label = 0.
+        # ratio21 = -0.1 , ratio22 = 0.2 then
+        #   1. 10% of (attribute2 =0 AND label = 1) will be changed to label = 0,
+        #   2. 20% of (attribute1 =1 AND label = 0) will be changed to label = 1.
+        self.inject_place = inject_place
+        self.inject_ratio = inject_ratio
+
+    def inject(self, data):
+        # perform bias injection on the input data.
+
+        for attribute in self.inject_ratio:
+            y = data.labels.ravel()
+            target = max(y)
+            non_target = min(y)
+            try:
+                ind = data.protected_attribute_names.index(attribute)
+            except:
+                print("Error: Attribute %s does not exist in the protected attributes." %attribute)
+                sys.exit(1)
+            groups = data.protected_attributes[:,ind]
+            for group, ratio in enumerate(self.inject_ratio[attribute]):
+                to_change = non_target if ratio>0 else target
+                change_to = target if ratio>0 else non_target
+                change = numpy.where((groups == group) & (y==to_change))[0]
+                size = int(numpy.abs(ratio)*len(change))
+                selected = numpy.random.choice(change, size, replace=False)
+                for i in selected:
+                    data.labels[i][0] = change_to
+        return data
+
+
+    def data_prepare(self):
+        data_train, data_test = self.data.split([0.7], shuffle=True)
+        if self.inject_place!="None":
+            data_train = self.inject(data_train)
+        if self.inject_place == "All":
+            data_test = self.inject(data_test)
+        return data_train, data_test
 
     def run(self):
-        data_train, data_test = self.data.split([0.7], shuffle=True)
+        data_train, data_test = self.data_prepare()
 
         privileged_groups = [{self.target_attribute: 1}]
         unprivileged_groups = [{self.target_attribute: 0}]
         if self.fair_balance=="FairBalance":
-            dataset_transf_train = FairBalance(data_train)
+            dataset_transf_train = FairBalance(data_train, class_balance=False)
+        elif self.fair_balance=="FairBalanceClass":
+            dataset_transf_train = FairBalance(data_train, class_balance=True)
         elif self.fair_balance=="Reweighing":
             RW = Reweighing(unprivileged_groups=unprivileged_groups,
                             privileged_groups=privileged_groups)
@@ -72,8 +121,8 @@ class Experiment:
             preds = self.model.predict(X_test)
 
         if self.fair_balance=="RejectOptionClassification":
-            pos_ind = numpy.where(self.model.classes_ == self.data.favorable_label)[0][0]
-            data_train_pred = data_train.copy(deepcopy=True)
+            pos_ind = numpy.where(self.model.classes_ == dataset_transf_train.favorable_label)[0][0]
+            data_train_pred = dataset_transf_train.copy(deepcopy=True)
             data_train_pred.scores = self.model.predict_proba(X_train)[:,pos_ind].reshape(-1,1)
             data_test_pred = data_test.copy(deepcopy=True)
             data_test_pred.scores = self.model.predict_proba(X_test)[:, pos_ind].reshape(-1, 1)
@@ -86,8 +135,12 @@ class Experiment:
                                               num_class_thresh=100, num_ROC_margin=50,
                                               metric_name=metric_name,
                                               metric_ub=metric_ub, metric_lb=metric_lb)
-            ROC = ROC.fit(data_train, data_train_pred)
+            try:
+                ROC.fit(dataset_transf_train, data_train_pred)
+            except:
+                return None
             preds = ROC.predict(data_test_pred).labels.ravel()
+
 
         y_test = data_test.labels.ravel()
         result = self.evaluate(numpy.array(preds), y_test, data_test)
@@ -103,7 +156,8 @@ class Experiment:
                 return aa / float(aa+bb)
 
         result = {}
-        target = X_test.unfavorable_label
+        # Get target label (for calculating the confusion matrix)
+        target = max(set(self.y))
         pp = preds == target
         np = preds != target
         pg = truth == target
