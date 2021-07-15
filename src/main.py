@@ -116,8 +116,8 @@ def parse_results_RQ3(iqr="True"):
 
 def exp_injection1(repeats=10):
     inject_place = "Train"
-    inject_ratio = {"sex":[0.2,0.0]}
-    exp_injection("LR", "compas", "FairBalance", inject_place, inject_ratio, repeats)
+    inject_ratio = {"sex":[0.5,-0.2]}
+    exp_injection("LR", "adult", "FairBalanceClass", inject_place, inject_ratio, repeats)
 
 def exp_injection(treatment, data, fair_balance, inject_place, inject_ratio, repeats=10):
     # Conduct one experiment:
@@ -135,7 +135,10 @@ def exp_injection(treatment, data, fair_balance, inject_place, inject_ratio, rep
         result = exp.run()
         if result:
             results = merge_dict(results, result)
-    print(results)
+    # print(results)
+    medians = copy.deepcopy(results)
+    medians = median_dict(medians, use_iqr= True)
+    print(medians)
     return results
 
 if __name__ == "__main__":
