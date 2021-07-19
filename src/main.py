@@ -6,6 +6,7 @@ except:
    import pickle
 from utils import *
 from experiment import Experiment
+import pandas as pd
 
 
 def one_exp(treatment, data, fair_balance, target="", repeats=10):
@@ -114,10 +115,82 @@ def parse_results_RQ3(iqr="True"):
     colored_df = dict2dfRQ3(colored)
     colored_df.to_csv("../results/RQ3_color.csv", index=False)
 
-def exp_injection1(repeats=10):
+def exp_injection_amount1(repeats=30):
     inject_place = "Train"
-    inject_ratio = {"sex":[0.5,-0.2]}
-    exp_injection("LR", "adult", "FairBalanceClass", inject_place, inject_ratio, repeats)
+    amount = 800
+    results = []
+    inject_amount = {}
+    result = exp_injection_amount("LR", "adult", "FairBalanceClass", inject_place, inject_amount, repeats)
+    result["Favor"] = "None"
+    result["Data"] = "adult"
+    results.append(result)
+    inject_amount = {"sex": amount}
+    result = exp_injection_amount("LR", "adult", "FairBalanceClass", inject_place, inject_amount, repeats)
+    result["Favor"] = "Female (%d)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_amount = {"sex": -amount}
+    result = exp_injection_amount("LR", "adult", "FairBalanceClass", inject_place, inject_amount, repeats)
+    result["Favor"] = "Male (%d)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_amount = {"race": amount}
+    result = exp_injection_amount("LR", "adult", "FairBalanceClass", inject_place, inject_amount, repeats)
+    result["Favor"] = "Non-white (%d)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_amount = {"race": -amount}
+    result = exp_injection_amount("LR", "adult", "FairBalanceClass", inject_place, inject_amount, repeats)
+    result["Favor"] = "White (%d)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_amount = {"sex": amount, "race": -amount}
+    result = exp_injection_amount("LR", "adult", "FairBalanceClass", inject_place, inject_amount, repeats)
+    result["Favor"] = "Female (%d), White (%d)" %(amount, amount)
+    result["Data"] = "adult"
+    results.append(result)
+    pd.DataFrame(results).to_csv("../results/bias_injection.csv", index=False)
+
+
+def exp_injection1(data = "compas", algorithm = "LR", balance = "FairBalanceClass", repeats=30):
+    inject_place = "Train"
+    amount = 0.4
+    if data == "german":
+        second = "age"
+    else:
+        second = "race"
+    results = []
+    inject_ratio = {}
+    result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
+    result["Favor"] = "None"
+    result["Data"] = "adult"
+    results.append(result)
+    inject_ratio = {"sex": [amount, -amount]}
+    result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
+    result["Favor"] = "Female (%f)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_ratio = {"sex": [-amount, amount]}
+    result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
+    result["Favor"] = "Male (%f)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_ratio = {second: [amount, -amount]}
+    result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
+    result["Favor"] = "Non-white (%f)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_ratio = {second: [-amount, amount]}
+    result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
+    result["Favor"] = "White (%f)" %amount
+    result["Data"] = "adult"
+    results.append(result)
+    inject_ratio = {"sex": [amount, -amount], second: [amount, -amount]}
+    result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
+    result["Favor"] = "Female (%f), Non-white (%f)" %(amount, amount)
+    result["Data"] = "adult"
+    results.append(result)
+    pd.DataFrame(results).to_csv("../results/bias_injection_"+data+".csv", index=False)
 
 def exp_injection(treatment, data, fair_balance, inject_place, inject_ratio, repeats=10):
     # Conduct one experiment:
@@ -138,8 +211,44 @@ def exp_injection(treatment, data, fair_balance, inject_place, inject_ratio, rep
     # print(results)
     medians = copy.deepcopy(results)
     medians = median_dict(medians, use_iqr= True)
+
+    protected = ["sex", "race", "age"]
+    for p in protected:
+        if p in medians:
+            for x in medians[p]:
+                medians[p+": "+x] = medians[p][x]
+            medians.pop(p)
     print(medians)
-    return results
+    return medians
+
+def exp_injection_amount(treatment, data, fair_balance, inject_place, inject_amount, repeats=10):
+    # Conduct one experiment:
+    #     treatment in {"SVM", "RF", "LR", "DT"}
+    #     data in {"compas", "adult", "german"}
+    #     fair_balance in {"None", "FairBalance"}
+    #     inject_place in {"None", "All", "Train"}
+    #     inject_amount={attribute1: amount1, attribute2: amount2, ...}
+    #     repeats = number of times repeating the experiments
+
+    exp = Experiment(treatment, data=data, fair_balance=fair_balance)
+    exp.inject_bias_amount(inject_place, inject_amount)
+    results = {}
+    for _ in range(repeats):
+        result = exp.run()
+        if result:
+            results = merge_dict(results, result)
+    # print(results)
+    medians = copy.deepcopy(results)
+    medians = median_dict(medians, use_iqr= True)
+
+    protected = ["sex", "race", "age"]
+    for p in protected:
+        if p in medians:
+            for x in medians[p]:
+                medians[p+": "+x] = medians[p][x]
+            medians.pop(p)
+    print(medians)
+    return medians
 
 if __name__ == "__main__":
     eval(cmd())

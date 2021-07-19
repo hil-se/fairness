@@ -1,7 +1,8 @@
 import numpy
 import sys
 sys.path.append("../")
-
+import numpy as np
+import pandas as pd
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas
 from aif360.algorithms.postprocessing.reject_option_classification import RejectOptionClassification
@@ -37,6 +38,8 @@ class Experiment:
         self.X = self.data.features
         self.y = self.data.labels.ravel()
         self.inject_place = "None"
+        self.inject_ratio = None
+        self.inject_amount = None
 
     def inject_bias(self, inject_place, inject_ratio):
         # inject_place = {"All": inject to both training and test data, "Train": only inject bias in training data, "None": no biased labels}
@@ -50,27 +53,58 @@ class Experiment:
         self.inject_place = inject_place
         self.inject_ratio = inject_ratio
 
+    def inject_bias_amount(self, inject_place, inject_amount):
+        # inject_place = {"All": inject to both training and test data, "Train": only inject bias in training data, "None": no biased labels}
+        # inject_ratio={attribute1: amount1, attribute2: amount2, ...}
+        # amount1 = 20 , amount2 = -10 then
+        #   1. 20 of (attribute1 =0 AND label = 0) will be changed to label = 1,
+        #       and 20 of (attribute1 =1 AND label = 1) will be changed to label = 0
+        #   2. 10 of (attribute2 =1 AND label = 0) will be changed to label = 1,
+        #       and 10 of (attribute2 =0 AND label = 1) will be changed to label = 0.
+
+        self.inject_place = inject_place
+        self.inject_amount = inject_amount
+
     def inject(self, data):
         # perform bias injection on the input data.
-
-        for attribute in self.inject_ratio:
-            y = data.labels.ravel()
-            target = max(y)
-            non_target = min(y)
-            try:
-                ind = data.protected_attribute_names.index(attribute)
-            except:
-                print("Error: Attribute %s does not exist in the protected attributes." %attribute)
-                sys.exit(1)
-            groups = data.protected_attributes[:,ind]
-            for group, ratio in enumerate(self.inject_ratio[attribute]):
-                to_change = non_target if ratio>0 else target
-                change_to = target if ratio>0 else non_target
-                change = numpy.where((groups == group) & (y==to_change))[0]
-                size = int(numpy.abs(ratio)*len(change))
-                selected = numpy.random.choice(change, size, replace=False)
-                for i in selected:
-                    data.labels[i][0] = change_to
+        if self.inject_ratio:
+            for attribute in self.inject_ratio:
+                y = data.labels.ravel()
+                target = max(y)
+                non_target = min(y)
+                try:
+                    ind = data.protected_attribute_names.index(attribute)
+                except:
+                    print("Error: Attribute %s does not exist in the protected attributes." %attribute)
+                    sys.exit(1)
+                groups = data.protected_attributes[:,ind]
+                for group, ratio in enumerate(self.inject_ratio[attribute]):
+                    to_change = non_target if ratio>0 else target
+                    change_to = target if ratio>0 else non_target
+                    change = numpy.where((groups == group) & (y==to_change))[0]
+                    size = int(numpy.abs(ratio)*len(change))
+                    selected = numpy.random.choice(change, size, replace=False)
+                    for i in selected:
+                        data.labels[i][0] = change_to
+        elif self.inject_amount:
+            for attribute in self.inject_amount:
+                y = data.labels.ravel()
+                target = max(y)
+                non_target = min(y)
+                try:
+                    ind = data.protected_attribute_names.index(attribute)
+                except:
+                    print("Error: Attribute %s does not exist in the protected attributes." %attribute)
+                    sys.exit(1)
+                groups = data.protected_attributes[:,ind]
+                amount = self.inject_amount[attribute]
+                for group in range(2):
+                    to_change = non_target if group != (amount > 0) else target
+                    change_to = target if group != (amount > 0) else non_target
+                    change = numpy.where((groups == group) & (y == to_change))[0]
+                    selected = numpy.random.choice(change, abs(amount), replace=False)
+                    for i in selected:
+                        data.labels[i][0] = change_to
         return data
 
 
@@ -144,6 +178,31 @@ class Experiment:
 
         y_test = data_test.labels.ravel()
         result = self.evaluate(numpy.array(preds), y_test, data_test)
+        tmp = self.assess_unawareness(data_test)
+        for key in self.data.protected_attribute_names:
+            result[key]['unawareness'] = tmp[key]
+        return result
+
+    def assess_unawareness(self, X_test):
+        result = {}
+        test_set = X_test.convert_to_dataframe()[0].drop(X_test.label_names, axis=1)
+        for key in self.data.protected_attribute_names:
+            test_set2 = test_set.to_dict('list')
+            m = len(test_set)
+            for j in range(m):
+                for k in test_set.columns:
+                    if k == key:
+                        test_set2[k][j] = 1.0 - test_set[k][j]
+                    else:
+                        test_set2[k][j] = test_set[k][j]
+            test_set2 = pd.DataFrame(test_set2, columns = test_set.columns)
+            pred1 = self.model.predict(test_set)
+            pred2 = self.model.predict(test_set2)
+            protected = test_set[key].to_numpy()
+            max = np.max(protected)
+            min = np.min(protected)
+            protected = (protected - (max+min)/2)/((max-min)/2)
+            result[key] = np.sum((pred1 - pred2)*protected)/m
         return result
 
     def evaluate(self, preds, truth, X_test):
