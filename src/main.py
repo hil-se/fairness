@@ -192,11 +192,14 @@ def exp_injection1(data = "compas", algorithm = "LR", balance = "FairBalanceClas
     results.append(result)
     pd.DataFrame(results).to_csv("../results/bias_injection_"+data+".csv", index=False)
 
+def test():
+    exp_injection("LR", "adult", "FairBalanceClass", "Train", {"race": [-0.4, 0.4]}, 1)
+
 def exp_injection(treatment, data, fair_balance, inject_place, inject_ratio, repeats=10):
     # Conduct one experiment:
     #     treatment in {"SVM", "RF", "LR", "DT"}
     #     data in {"compas", "adult", "german"}
-    #     fair_balance in {"None", "FairBalance"}
+    #     fair_balance in {"None", "FairBalance", "FairBalanceClass"}
     #     inject_place in {"None", "All", "Train"}
     #     inject_ratio={attribute1: [ratio11, ratio12], attribute2: [ratio21, ratio22], ...}
     #     repeats = number of times repeating the experiments

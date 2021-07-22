@@ -3,6 +3,7 @@ import sys
 sys.path.append("../")
 import numpy as np
 import pandas as pd
+from utils import *
 from aif360.algorithms.preprocessing.reweighing import Reweighing
 from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas
 from aif360.algorithms.postprocessing.reject_option_classification import RejectOptionClassification
@@ -40,6 +41,7 @@ class Experiment:
         self.inject_place = "None"
         self.inject_ratio = None
         self.inject_amount = None
+        self.injected = []
 
     def inject_bias(self, inject_place, inject_ratio):
         # inject_place = {"All": inject to both training and test data, "Train": only inject bias in training data, "None": no biased labels}
@@ -66,6 +68,7 @@ class Experiment:
         self.inject_amount = inject_amount
 
     def inject(self, data):
+        self.injected = []
         # perform bias injection on the input data.
         if self.inject_ratio:
             for attribute in self.inject_ratio:
@@ -84,6 +87,7 @@ class Experiment:
                     change = numpy.where((groups == group) & (y==to_change))[0]
                     size = int(numpy.abs(ratio)*len(change))
                     selected = numpy.random.choice(change, size, replace=False)
+                    self.injected.extend(list(selected))
                     for i in selected:
                         data.labels[i][0] = change_to
         elif self.inject_amount:
@@ -103,6 +107,7 @@ class Experiment:
                     change_to = target if group != (amount > 0) else non_target
                     change = numpy.where((groups == group) & (y == to_change))[0]
                     selected = numpy.random.choice(change, abs(amount), replace=False)
+                    self.injected.extend(list(selected))
                     for i in selected:
                         data.labels[i][0] = change_to
         return data
@@ -181,7 +186,54 @@ class Experiment:
         tmp = self.assess_unawareness(data_test)
         for key in self.data.protected_attribute_names:
             result[key]['unawareness'] = tmp[key]
+
+        print(self.test_correction(data_train, X_train, tmp))
+
         return result
+
+    def test_correction(self, data, X_train, metrics):
+        from pdb import set_trace
+        thres = 0.01
+        y = data.labels.ravel()
+        target = max(y)
+        non_target = min(y)
+        probs = self.model.predict_proba(X_train)
+        results = {}
+        for attribute in metrics:
+            try:
+                ind = data.protected_attribute_names.index(attribute)
+            except:
+                print("Error: Attribute %s does not exist in the protected attributes." % attribute)
+                sys.exit(1)
+            groups = data.protected_attributes[:, ind]
+            if metrics[attribute] > thres:
+                direction = 1
+            elif metrics[attribute] < -thres:
+                direction = 0
+            else:
+                continue
+            combined_probs = []
+            combined_susp = []
+            for group in range(2):
+                candidate = target if group != direction  else non_target
+                pos_ind = numpy.where(self.model.classes_ == candidate)[0][0]
+                susp = numpy.where((groups == group) & (y == candidate))[0]
+                combined_susp.extend(list(susp))
+                combined_probs.extend(list(probs[susp,pos_ind]))
+            inspect_result = []
+            for o in np.array(combined_susp)[np.argsort(np.array(combined_probs))]:
+                if o in self.injected:
+                    inspect_result.append(1)
+                else:
+                    inspect_result.append(0)
+            results[attribute] = AUC(inspect_result)
+        return results
+
+
+
+
+
+
 
     def assess_unawareness(self, X_test):
         result = {}
@@ -202,7 +254,7 @@ class Experiment:
             max = np.max(protected)
             min = np.min(protected)
             protected = (protected - (max+min)/2)/((max-min)/2)
-            result[key] = np.sum((pred1 - pred2)*protected)/m
+            result[key] = np.sum((pred2 - pred1)*protected)/m
         return result
 
     def evaluate(self, preds, truth, X_test):

@@ -184,3 +184,20 @@ def color(median, compare):
         else:
             median[key] = mapping[compare[key]]+median[key]
     return median
+
+def AUC(result):
+    tp=0
+    fp=0
+    auc = 0
+    for x in result:
+        if x>0:
+            tp+=1
+        else:
+            fp+=1
+            auc += tp
+    if tp==0:
+        return 0.0
+    elif fp==0:
+        return 1.0
+    else:
+        return float(auc) / tp / fp
