@@ -184,22 +184,23 @@ class Experiment:
         y_test = data_test.labels.ravel()
         result = self.evaluate(numpy.array(preds), y_test, data_test)
         tmp = self.assess_unawareness(data_test)
+        correction = self.test_correction(data_train, X_train, tmp)
         for key in self.data.protected_attribute_names:
             result[key]['unawareness'] = tmp[key]
-
-        print(self.test_correction(data_train, X_train, tmp))
+            result[key].update(correction[key])
 
         return result
 
     def test_correction(self, data, X_train, metrics):
         from pdb import set_trace
-        thres = 0.01
+        thres = 0.015
         y = data.labels.ravel()
         target = max(y)
         non_target = min(y)
         probs = self.model.predict_proba(X_train)
         results = {}
         for attribute in metrics:
+            results[attribute]={}
             try:
                 ind = data.protected_attribute_names.index(attribute)
             except:
@@ -226,7 +227,8 @@ class Experiment:
                     inspect_result.append(1)
                 else:
                     inspect_result.append(0)
-            results[attribute] = AUC(inspect_result)
+            results[attribute]["AUC"] = AUC(inspect_result)
+            results[attribute]["P@10"] = topK_precision(inspect_result, 10)
         return results
 
 

@@ -201,3 +201,6 @@ def AUC(result):
         return 1.0
     else:
         return float(auc) / tp / fp
+
+def topK_precision(result, K):
+    return np.mean(result[:K])
