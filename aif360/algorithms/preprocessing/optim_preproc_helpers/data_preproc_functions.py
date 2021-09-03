@@ -109,8 +109,7 @@ def load_preproc_data_compas(protected_attributes=None):
                                 pd.to_datetime(df['c_jail_in'])).apply(
                                                         lambda x: x.days)
 
-        # Restrict races to African-American and Caucasian
-        dfcut = df.loc[~df['race'].isin(['Native American','Hispanic','Asian','Other']),:]
+        dfcut = df
 
         # Restrict the features to use
         dfcutQ = dfcut[['sex','race','age_cat','c_charge_degree','score_text','priors_count','is_recid',

@@ -18,5 +18,7 @@ def FairBalance(data, class_balance = False):
         weight = class_weight[key[-1]]/len(grouping[key])
         for i in grouping[key]:
             weighted_data.instance_weights[i] = weight
+    # Rescale the total weights to len(y)
+    weighted_data.instance_weights = weighted_data.instance_weights * len(y) / sum(weighted_data.instance_weights)
     return weighted_data
 

@@ -192,6 +192,10 @@ def exp_injection1(data = "compas", algorithm = "LR", balance = "FairBalanceClas
     results.append(result)
     pd.DataFrame(results).to_csv("../results/bias_injection_"+data+".csv", index=False)
 
+def exp_inject():
+    for data in ['compas', 'adult', 'german']:
+        exp_injection1(data)
+
 def test():
     exp_injection("LR", "adult", "FairBalanceClass", "Train", {"race": [-0.4, 0.4]}, 1)
 

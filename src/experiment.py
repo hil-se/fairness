@@ -183,10 +183,10 @@ class Experiment:
 
         y_test = data_test.labels.ravel()
         result = self.evaluate(numpy.array(preds), y_test, data_test)
-        tmp = self.assess_unawareness(data_test)
+        tmp = self.assess_situation(data_test)
         correction = self.test_correction(data_train, X_train, tmp)
         for key in self.data.protected_attribute_names:
-            result[key]['unawareness'] = tmp[key]
+            result[key]['situation'] = tmp[key]
             result[key].update(correction[key])
 
         return result
@@ -237,7 +237,7 @@ class Experiment:
 
 
 
-    def assess_unawareness(self, X_test):
+    def assess_situation(self, X_test):
         result = {}
         test_set = X_test.convert_to_dataframe()[0].drop(X_test.label_names, axis=1)
         for key in self.data.protected_attribute_names:
