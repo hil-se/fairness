@@ -1,4 +1,4 @@
-from aif360.datasets import AdultDataset, GermanDataset, CompasDataset
+from aif360.datasets import AdultDataset, GermanDataset, CompasDataset, BankDataset
 import pandas as pd
 import numpy as np
 
@@ -295,4 +295,16 @@ def load_preproc_data_german(protected_attributes=None):
         metadata={ 'label_maps': [{1.0: 'Good Credit', 2.0: 'Bad Credit'}],
                    'protected_attribute_maps': [all_protected_attribute_maps[x]
                                 for x in D_features]},
+        custom_preprocessing=custom_preprocessing)
+
+def load_preproc_data_bank(protected_attributes=None):
+    def custom_preprocessing(df):
+        df['y'] = df['y'].replace({'yes': 1.0, 'no': 0.0})
+        df['age'] = df['age'].apply(lambda x: np.float(x >= 26))
+        return df
+
+    return BankDataset(
+        favorable_classes=[1.0],
+        privileged_classes = [[1.0]],
+        metadata={'label_maps': [{0.0: 'no', 1.0: 'yes'}]},
         custom_preprocessing=custom_preprocessing)

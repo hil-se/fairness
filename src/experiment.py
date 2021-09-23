@@ -5,17 +5,21 @@ import numpy as np
 import pandas as pd
 from utils import *
 from aif360.algorithms.preprocessing.reweighing import Reweighing
-from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas
+from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas, load_preproc_data_bank
 from aif360.algorithms.postprocessing.reject_option_classification import RejectOptionClassification
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import LinearSVC
 from sklearn.naive_bayes import GaussianNB
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from collections import Counter
 from fairbalance import FairBalance
 from aif360.algorithms.inprocessing.adversarial_debiasing import AdversarialDebiasing
+from sklearn.compose import make_column_selector as selector
+from sklearn.compose import ColumnTransformer
+
+
 import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
 
@@ -23,11 +27,11 @@ class Experiment:
     def __init__(self, model, data="german", fair_balance = "none", target_attribute=""):
         models = {"SVM": LinearSVC(dual=False),
                   "RF": RandomForestClassifier(n_estimators=100, criterion="entropy"),
-                  "LR": LogisticRegression(),
+                  "LR": LogisticRegression(max_iter=1000),
                   "DT": DecisionTreeClassifier(criterion="entropy"),
                   "NB": GaussianNB()
                   }
-        data_loader = {"compas": load_preproc_data_compas, "adult": load_preproc_data_adult, "german": load_preproc_data_german}
+        data_loader = {"compas": load_preproc_data_compas, "adult": load_preproc_data_adult, "german": load_preproc_data_german, "bank": load_preproc_data_bank}
 
         self.model = models[model]
         self.fair_balance = fair_balance
@@ -150,13 +154,24 @@ class Experiment:
             preds = self.model.predict(data_test).labels.ravel()
             sess.close()
         else:
-            scale_orig = StandardScaler()
-            X_train = scale_orig.fit_transform(dataset_transf_train.features)
+            numerical_columns_selector = selector(dtype_exclude=object)
+            categorical_columns_selector = selector(dtype_include=object)
+
+            numerical_columns = numerical_columns_selector(dataset_transf_train.features_df)
+            categorical_columns = categorical_columns_selector(dataset_transf_train.features_df)
+
+            categorical_preprocessor = OneHotEncoder(handle_unknown="ignore")
+            numerical_preprocessor = StandardScaler()
+            preprocessor = ColumnTransformer([
+                ('one-hot-encoder', categorical_preprocessor, categorical_columns),
+                ('standard-scaler', numerical_preprocessor, numerical_columns)])
+
+            X_train = preprocessor.fit_transform(dataset_transf_train.features_df)
             y_train = dataset_transf_train.labels.ravel()
 
             self.model.fit(X_train, y_train, sample_weight=dataset_transf_train.instance_weights)
 
-            X_test = scale_orig.transform(data_test.features)
+            X_test = preprocessor.transform(data_test.features_df)
             preds = self.model.predict(X_test)
 
         if self.fair_balance=="RejectOptionClassification":

@@ -108,6 +108,7 @@ class StructuredDataset(Dataset):
                               and n != instance_weights_name]
         self.label_names = label_names
         self.features = df[self.feature_names].values.copy()
+        self.features_df = df[self.feature_names].copy()
         self.labels = df[self.label_names].values.copy()
         self.instance_names = df.index.astype(str).tolist()
 
@@ -163,6 +164,7 @@ class StructuredDataset(Dataset):
         subset = self.copy()
         subset.instance_names = indexes_str
         subset.features = self.features[indexes]
+        subset.features_df = self.features_df.iloc[indexes]
         subset.labels = self.labels[indexes]
         subset.instance_weights = self.instance_weights[indexes]
         subset.protected_attributes = self.protected_attributes[indexes]
@@ -471,6 +473,7 @@ class StructuredDataset(Dataset):
         folds = [self.copy() for _ in range(num_folds)]
 
         features = np.array_split(self.features[order], num_or_size_splits)
+        features_df = np.array_split(self.features_df.iloc[order], num_or_size_splits)
         labels = np.array_split(self.labels[order], num_or_size_splits)
         scores = np.array_split(self.scores[order], num_or_size_splits)
         protected_attributes = np.array_split(self.protected_attributes[order],
@@ -479,11 +482,12 @@ class StructuredDataset(Dataset):
             num_or_size_splits)
         instance_names = np.array_split(np.array(self.instance_names)[order],
             num_or_size_splits)
-        for fold, feats, labs, scors, prot_attrs, inst_wgts, inst_name in zip(
-                folds, features, labels, scores, protected_attributes, instance_weights,
+        for fold, feats, feats_df, labs, scors, prot_attrs, inst_wgts, inst_name in zip(
+                folds, features, features_df, labels, scores, protected_attributes, instance_weights,
                 instance_names):
 
             fold.features = feats
+            fold.features_df = feats_df
             fold.labels = labs
             fold.scores = scors
             fold.protected_attributes = prot_attrs
