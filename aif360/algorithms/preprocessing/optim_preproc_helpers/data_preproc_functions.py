@@ -1,4 +1,4 @@
-from aif360.datasets import AdultDataset, GermanDataset, CompasDataset, BankDataset
+from aif360.datasets import AdultDataset, GermanDataset, CompasDataset, BankDataset, HeartDataset
 import pandas as pd
 import numpy as np
 
@@ -255,26 +255,47 @@ def load_preproc_data_german(protected_attributes=None):
             else:
                 return 'NA'
 
-        status_map = {'A91': 1.0, 'A93': 1.0, 'A94': 1.0,
-                    'A92': 0.0, 'A95': 0.0}
-        df['sex'] = df['personal_status'].replace(status_map)
+        status_map = {'A11':1.0,'A12':2.0, 'A13':3.0, 'A14': 0.0,
+                      'A30':0.0, 'A31':0.0, 'A32':0.0, 'A33':1.0, 'A34':1.0,
+                      'A61':1.0, 'A62':2.0, 'A63':3.0, 'A64':4.0, 'A65': 0.0,
+                      'A71':0.0, 'A72':1.0, 'A73':2.0, 'A74':3.0, 'A75':4.0,
+                      'A91': 1.0, 'A93': 1.0, 'A94': 1.0, 'A92': 0.0, 'A95': 0.0,
+                      'A101':0.0, 'A102':1.0, 'A103':2.0,
+                      'A121': 0.0, 'A122': 1.0, 'A123': 2.0, 'A124': 3.0,
+                      'A141': 0.0, 'A142': 1.0, 'A143': 2.0,
+                      'A151': 1.0, 'A152': 2.0, 'A153': 2.0,
+                      'A171': 0.0, 'A172': 1.0, 'A173': 2.0, 'A174': 3.0,
+                      'A191': 1.0, 'A192': 2.0,
+                      'A201': 1.0, 'A202': 2.0
+                      }
+
+        df = df.replace(status_map)
+        df['sex'] = df['personal_status']
 
 
         # group credit history, savings, and employment
-        df['credit_history'] = df['credit_history'].apply(lambda x: group_credit_hist(x))
-        df['savings'] = df['savings'].apply(lambda x: group_savings(x))
-        df['employment'] = df['employment'].apply(lambda x: group_employ(x))
+        # df['credit_history'] = df['credit_history'].apply(lambda x: group_credit_hist(x))
+        # df['savings'] = df['savings'].apply(lambda x: group_savings(x))
+        # df['employment'] = df['employment'].apply(lambda x: group_employ(x))
+        # df['status'] = df['status'].apply(lambda x: group_status(x))
+
+
         df['age'] = df['age'].apply(lambda x: np.float(x >= 26))
-        df['status'] = df['status'].apply(lambda x: group_status(x))
 
         return df
 
     # Feature partitions
-    XD_features = ['credit_history', 'savings', 'employment', 'sex', 'age']
+
+    XD_features = ['status', 'month', 'credit_history', 'credit_amount',
+       'savings', 'employment', 'investment_as_income_percentage',
+       'other_debtors', 'residence_since', 'property',
+       'age', 'installment_plans', 'housing', 'number_of_credits',
+       'skill_level', 'people_liable_for', 'telephone', 'foreign_worker',
+       'credit', 'sex']
     D_features = ['sex', 'age'] if protected_attributes is None else protected_attributes
     Y_features = ['credit']
     X_features = list(set(XD_features)-set(D_features))
-    categorical_features = ['credit_history', 'savings', 'employment']
+    categorical_features = []
 
     # privileged classes
     all_privileged_classes = {"sex": [1.0],
@@ -304,6 +325,18 @@ def load_preproc_data_bank(protected_attributes=None):
         return df
 
     return BankDataset(
+        favorable_classes=[1.0],
+        privileged_classes = [[1.0]],
+        metadata={'label_maps': [{0.0: 'no', 1.0: 'yes'}]},
+        custom_preprocessing=custom_preprocessing)
+
+def load_preproc_data_heart(protected_attributes=None):
+    def custom_preprocessing(df):
+        df['y'] = df['y'].replace({2.0: 1.0, 3.0: 1.0, 4.0: 1.0})
+        df['age'] = df['age'].apply(lambda x: np.float(x >= 60))
+        return df
+
+    return HeartDataset(
         favorable_classes=[1.0],
         privileged_classes = [[1.0]],
         metadata={'label_maps': [{0.0: 'no', 1.0: 'yes'}]},

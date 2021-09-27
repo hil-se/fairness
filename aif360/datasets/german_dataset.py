@@ -54,7 +54,7 @@ class GermanDataset(StandardDataset):
             case differs from the default, we can modify the mapping stored in
             `metadata`:
 
-            >>> label_map = {1.0: 'Good Credit', 0.0: 'Bad Credit'}
+            >>> label_map = {1.0: 'Good Credit', 2.0: 'Bad Credit'}
             >>> protected_attribute_maps = [{1.0: 'Male', 0.0: 'Female'}]
             >>> gd = GermanDataset(protected_attribute_names=['sex'],
             ... privileged_classes=[['male']], metadata={'label_map': label_map,

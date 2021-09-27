@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from utils import *
 from aif360.algorithms.preprocessing.reweighing import Reweighing
-from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions import load_preproc_data_adult, load_preproc_data_german, load_preproc_data_compas, load_preproc_data_bank
+from aif360.algorithms.preprocessing.optim_preproc_helpers.data_preproc_functions import *
 from aif360.algorithms.postprocessing.reject_option_classification import RejectOptionClassification
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
@@ -31,7 +31,7 @@ class Experiment:
                   "DT": DecisionTreeClassifier(criterion="entropy"),
                   "NB": GaussianNB()
                   }
-        data_loader = {"compas": load_preproc_data_compas, "adult": load_preproc_data_adult, "german": load_preproc_data_german, "bank": load_preproc_data_bank}
+        data_loader = {"compas": load_preproc_data_compas, "adult": load_preproc_data_adult, "german": load_preproc_data_german, "bank": load_preproc_data_bank, "heart": load_preproc_data_heart}
 
         self.model = models[model]
         self.fair_balance = fair_balance

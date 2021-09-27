@@ -164,7 +164,7 @@ def exp_injection1(data = "compas", algorithm = "LR", balance = "FairBalanceClas
     results.append(result)
     if data in {"adult", "german", "compas"}:
         first = 'sex'
-        if data == "german":
+        if data in {"german"}:
             second = "age"
         else:
             second = "race"
