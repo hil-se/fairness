@@ -199,21 +199,23 @@ class Experiment:
         y_test = data_test.labels.ravel()
         result = self.evaluate(numpy.array(preds), y_test, data_test)
         tmp = self.assess_situation(data_test)
-        correction = self.test_correction(data_train, X_train, tmp)
+        correction = self.test_correction(data_train, X_train, {key: result[key]['eod'] for key in self.data.protected_attribute_names})
         for key in self.data.protected_attribute_names:
             result[key]['situation'] = tmp[key]
+
             result[key].update(correction[key])
 
         return result
 
     def test_correction(self, data, X_train, metrics):
-        from pdb import set_trace
-        thres = 0.015
+        thres = 0.05
         y = data.labels.ravel()
         target = max(y)
         non_target = min(y)
         probs = self.model.predict_proba(X_train)
         results = {}
+
+        to_inspect = []
         for attribute in metrics:
             results[attribute]={}
             try:
@@ -238,12 +240,21 @@ class Experiment:
                 combined_probs.extend(list(probs[susp,pos_ind]))
             inspect_result = []
             for o in np.array(combined_susp)[np.argsort(np.array(combined_probs))]:
+                to_inspect.append(o)
                 if o in self.injected:
                     inspect_result.append(1)
                 else:
                     inspect_result.append(0)
             results[attribute]["AUC"] = AUC(inspect_result)
             results[attribute]["P@10"] = topK_precision(inspect_result, 10)
+
+        # print(data.subset(to_inspect[:10]).instance_names)
+        # from pdb import set_trace
+        # set_trace()
+        # data.subset(to_inspect[:10]).convert_to_dataframe()[0].to_csv("../results/inspection_german.csv",
+        #                                                                          index=True)
+
+
         return results
 
 

@@ -215,45 +215,45 @@ def load_preproc_data_german(protected_attributes=None):
         """ Custom pre-processing for German Credit Data
         """
 
-        def group_credit_hist(x):
-            if x in ['A30', 'A31', 'A32']:
-                return 'None/Paid'
-            elif x == 'A33':
-                return 'Delay'
-            elif x == 'A34':
-                return 'Other'
-            else:
-                return 'NA'
-
-        def group_employ(x):
-            if x == 'A71':
-                return 'Unemployed'
-            elif x in ['A72', 'A73']:
-                return '1-4 years'
-            elif x in ['A74', 'A75']:
-                return '4+ years'
-            else:
-                return 'NA'
-
-        def group_savings(x):
-            if x in ['A61', 'A62']:
-                return '<500'
-            elif x in ['A63', 'A64']:
-                return '500+'
-            elif x == 'A65':
-                return 'Unknown/None'
-            else:
-                return 'NA'
-
-        def group_status(x):
-            if x in ['A11', 'A12']:
-                return '<200'
-            elif x in ['A13']:
-                return '200+'
-            elif x == 'A14':
-                return 'None'
-            else:
-                return 'NA'
+        # def group_credit_hist(x):
+        #     if x in ['A30', 'A31', 'A32']:
+        #         return 'None/Paid'
+        #     elif x == 'A33':
+        #         return 'Delay'
+        #     elif x == 'A34':
+        #         return 'Other'
+        #     else:
+        #         return 'NA'
+        #
+        # def group_employ(x):
+        #     if x == 'A71':
+        #         return 'Unemployed'
+        #     elif x in ['A72', 'A73']:
+        #         return '1-4 years'
+        #     elif x in ['A74', 'A75']:
+        #         return '4+ years'
+        #     else:
+        #         return 'NA'
+        #
+        # def group_savings(x):
+        #     if x in ['A61', 'A62']:
+        #         return '<500'
+        #     elif x in ['A63', 'A64']:
+        #         return '500+'
+        #     elif x == 'A65':
+        #         return 'Unknown/None'
+        #     else:
+        #         return 'NA'
+        #
+        # def group_status(x):
+        #     if x in ['A11', 'A12']:
+        #         return '<200'
+        #     elif x in ['A13']:
+        #         return '200+'
+        #     elif x == 'A14':
+        #         return 'None'
+        #     else:
+        #         return 'NA'
 
         status_map = {'A11':1.0,'A12':2.0, 'A13':3.0, 'A14': 0.0,
                       'A30':0.0, 'A31':0.0, 'A32':0.0, 'A33':1.0, 'A34':1.0,
