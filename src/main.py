@@ -126,9 +126,13 @@ def exp_injection1(data = "compas", algorithm = "LR", balance = "FairBalanceClas
     results = []
     attr_map = {"age": ['Old', 'Young'], "sex": ['Male', "Female"], "race": ["White", "Non-white"]}
     inject_ratio = {}
+    result = exp_injection(algorithm, data, "None", inject_place, inject_ratio, repeats)
+    result["Favor"] = "None"
+    result["Data"] = "None"
+    results.append(result)
     result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
     result["Favor"] = "None"
-    result["Data"] = data
+    result["Data"] = balance
     results.append(result)
     for amount in amounts:
         if data in {"adult", "german", "compas"}:
@@ -141,39 +145,39 @@ def exp_injection1(data = "compas", algorithm = "LR", balance = "FairBalanceClas
             inject_ratio = {first: [amount, -amount]}
             result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
             result["Favor"] = "%s (%.1f)" %(attr_map[first][1], amount)
-            result["Data"] = data
+            result["Data"] = balance
             results.append(result)
             inject_ratio = {first: [-amount, amount]}
             result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
             result["Favor"] = "%s (%.1f)" %(attr_map[first][0], amount)
-            result["Data"] = data
+            result["Data"] = balance
             results.append(result)
             inject_ratio = {second: [amount, -amount]}
             result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
             result["Favor"] = "%s (%.1f)" %(attr_map[second][1], amount)
-            result["Data"] = data
+            result["Data"] = balance
             results.append(result)
             inject_ratio = {second: [-amount, amount]}
             result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
             result["Favor"] = "%s (%.1f)" %(attr_map[second][0], amount)
-            result["Data"] = data
+            result["Data"] = balance
             results.append(result)
             inject_ratio = {first: [amount, -amount], second: [amount, -amount]}
             result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
             result["Favor"] = "%s (%.1f), %s (%.1f)" % (attr_map[first][1], amount, attr_map[second][1], amount)
-            result["Data"] = data
+            result["Data"] = balance
             results.append(result)
         else:
             target = "age"
             inject_ratio = {target: [amount, -amount]}
             result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
             result["Favor"] = "%s (%.1f)" %(attr_map[target][1], amount)
-            result["Data"] = data
+            result["Data"] = balance
             results.append(result)
             inject_ratio = {target: [-amount, amount]}
             result = exp_injection(algorithm, data, balance, inject_place, inject_ratio, repeats)
             result["Favor"] = "%s (%.1f)" % (attr_map[target][0], amount)
-            result["Data"] = data
+            result["Data"] = balance
             results.append(result)
     pd.DataFrame(results).to_csv("../results/bias_injection_"+data+".csv", index=False)
 
