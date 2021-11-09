@@ -120,7 +120,7 @@ def exp_inject():
     for data in ['compas', 'adult', 'heart', 'bank']:
         exp_injection1(data)
 
-def exp_injection1(data = "compas", algorithm = "LR", balance = "FairBalanceClass", repeats=30):
+def exp_injection1(data = "adult", algorithm = "LR", balance = "FairBalanceClass", repeats=50):
     inject_place = "Train"
     amounts = [0.1, 0.2, 0.3, 0.4]
     results = []
