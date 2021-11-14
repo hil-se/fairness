@@ -322,6 +322,7 @@ def load_preproc_data_bank(protected_attributes=None):
     def custom_preprocessing(df):
         df['y'] = df['y'].replace({'yes': 1.0, 'no': 0.0})
         df['age'] = df['age'].apply(lambda x: np.float(x >= 26))
+
         return df
 
     return BankDataset(

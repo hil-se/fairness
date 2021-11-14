@@ -87,13 +87,16 @@ class Experiment:
                 groups = data.protected_attributes[:,ind]
                 for group, ratio in enumerate(self.inject_ratio[attribute]):
                     to_change = non_target if ratio>0 else target
-                    change_to = target if ratio>0 else non_target
                     change = numpy.where((groups == group) & (y==to_change))[0]
                     size = int(numpy.abs(ratio)*len(change))
                     selected = numpy.random.choice(change, size, replace=False)
                     self.injected.extend(list(selected))
-                    for i in selected:
-                        data.labels[i][0] = change_to
+            self.injected = list(set(self.injected))
+            for i in self.injected:
+                if data.labels[i][0] == target:
+                    data.labels[i][0] = non_target
+                else:
+                    data.labels[i][0] = target
         elif self.inject_amount:
             for attribute in self.inject_amount:
                 y = data.labels.ravel()
